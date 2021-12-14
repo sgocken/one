@@ -18,6 +18,7 @@ require 'opennebula'
 require 'vcenter_driver'
 require 'logger'
 require 'open3'
+require 'get_process_mem'
 
 def unindent(s)
     m = s.match(/^(\s*)/)
@@ -591,11 +592,14 @@ class Cluster
     # TODO: Add more than one nsx managers
     #---------------------------------------------------------------------------
     def nsx_info_vcenter
+	$logger.info("nsx_info_vcenter starts, Mem: #{ GetProcessMem.new.mb.round } MB")
+        memory_list = "nsx_info_vcenter loop usage, MB: "
         @nsx_obj = {}
 
         elist = @vic.vim.serviceContent.extensionManager.extensionList
 
         elist.each do |ext_list|
+            memory_list += "#{ GetProcessMem.new.mb.round }, "
             case ext_list.key
             when NSXDriver::NSXConstants::NSXV_EXTENSION_LIST
                 parts = ext_list.client[0].url.split('/')
@@ -617,6 +621,8 @@ class Cluster
                 next
             end
         end
+	$logger.info(memory_list.delete_suffix!(', '))
+	$logger.info("nsx_info_vcenter ends, Mem: #{ GetProcessMem.new.mb.round } MB")
 
         return '' if @nsx_obj.empty?
 
